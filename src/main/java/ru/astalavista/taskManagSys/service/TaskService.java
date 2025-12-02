@@ -29,10 +29,7 @@ public class TaskService {
     private final TaskRepository repository;
     private final TaskMapper mapper;
 
-    public TaskService(TaskRepository repository, TaskMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
+
 
     public TaskDTO create(TaskDTO dto) {
         Task task = mapper.toEntity(dto);

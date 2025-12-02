@@ -13,9 +13,7 @@ public class TaskAuditController {
 
     private final TaskAuditService service;
 
-    public TaskAuditController(TaskAuditService service) {
-        this.service = service;
-    }
+
 
     @PostMapping
     public TaskAuditDTO create(@RequestBody TaskAuditDTO dto) {

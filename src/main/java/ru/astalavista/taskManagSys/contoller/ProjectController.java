@@ -13,9 +13,6 @@ public class ProjectController {
 
     private final ProjectService service;
 
-    public ProjectController(ProjectService service) {
-        this.service = service;
-    }
 
     @PostMapping
     public ProjectDTO create(@RequestBody ProjectDTO dto) {

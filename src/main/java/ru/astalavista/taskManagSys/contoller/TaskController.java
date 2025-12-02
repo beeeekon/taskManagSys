@@ -13,9 +13,7 @@ public class TaskController {
 
     private final TaskService service;
 
-    public TaskController(TaskService service) {
-        this.service = service;
-    }
+
 
     @PostMapping
     public TaskDTO create(@RequestBody TaskDTO dto) {

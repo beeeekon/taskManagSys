@@ -13,10 +13,6 @@ public class EmployeeController {
 
     private final EmployeeService service;
 
-    public EmployeeController(EmployeeService service) {
-        this.service = service;
-    }
-
     @GetMapping
     public List<EmployeeDTO> getAll() {
         return service.getAll();

@@ -16,10 +16,6 @@ public class TaskAuditService {
     private final TaskAuditRepository repository;
     private final TaskAuditMapper mapper;
 
-    public TaskAuditService(TaskAuditRepository repository, TaskAuditMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
 
     public TaskAuditDTO create(TaskAuditDTO dto) {
         TaskAudit audit = mapper.toEntity(dto);

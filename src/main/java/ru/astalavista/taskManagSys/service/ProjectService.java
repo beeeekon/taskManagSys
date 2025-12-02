@@ -16,10 +16,7 @@ public class ProjectService {
     private final ProjectRepository repository;
     private final ProjectMapper mapper;
 
-    public ProjectService(ProjectRepository repository, ProjectMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
+
 
     public ProjectDTO create(ProjectDTO dto) {
         Project project = mapper.toEntity(dto);

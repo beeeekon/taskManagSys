@@ -18,10 +18,7 @@ public class EmployeeService {
     private final EmployeeRepository repository;
     private final EmployeeMapper mapper;
 
-    public EmployeeService(EmployeeRepository repository, EmployeeMapper mapper) {
-        this.repository = repository;
-        this.mapper = mapper;
-    }
+
 
     public List<EmployeeDTO> getAll() {
         return repository.findAll().stream()
