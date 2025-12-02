@@ -1,13 +1,17 @@
-package ru.astalavista.taskManagSys.models;
+package ru.astalavista.taskManagSys.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import ru.astalavista.taskManagSys.model.enums.TaskStatus;
+import ru.astalavista.taskManagSys.model.enums.TaskType;
+
 import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "tasks")
 @Data
+@Table(name = "tasks")
 public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +25,12 @@ public class Task {
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)
     private TaskType type;
+
+    // Статус задачи
+    // Храним только последний статус, история изменений - в аудите
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private TaskStatus status;
 
     // Заголовок задачи
     @Column(name = "title", nullable = false, length = 500)
@@ -36,7 +46,7 @@ public class Task {
 
     // Затраченное время в часах
     @Column(name = "time_spent")
-    private Integer timeSpent = 0;
+    private Integer timeSpent;
 
     // Связь с проектом (многие задачи → один проект)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,11 +59,12 @@ public class Task {
     private Employee assignee;
 
     // Связь "многие-ко-многим" самой с собой (связанные задачи)
+    // TODO: Нужно будет вынести в отдельную сущность, если у связи появится доп. атрибут, например, время связи
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "task_links", // название таблицы-связки
-            joinColumns = @JoinColumn(name = "task_id"), // столбец для этой задачи
-            inverseJoinColumns = @JoinColumn(name = "linked_task_id") // столбец для связанной задачи
+        name = "task_links", // Название таблицы-связки
+        joinColumns = @JoinColumn(name = "task_id"), // Столбец для этой задачи
+        inverseJoinColumns = @JoinColumn(name = "linked_task_id") // Столбец для связанной задачи
     )
     private java.util.List<Task> linkedTasks;
 
@@ -67,9 +78,7 @@ public class Task {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Конструктор по умолчанию (обязателен для JPA)
-    public Task() {
-        TaskStatus status = TaskStatus.REGISTERED;
-        this.timeSpent = 0;
+    public Long getId() {
+        return this.id;
     }
 }

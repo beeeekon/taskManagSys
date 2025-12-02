@@ -1,4 +1,4 @@
-package ru.astalavista.taskManagSys.models;
+package ru.astalavista.taskManagSys.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -7,20 +7,19 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "employees")
 @Data
+@Table(name = "employees")
 public class Employee {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // Полное имя сотрудника
-    @Column(name = "full_name", nullable = false, length = 255)
+    @Column(name = "full_name", nullable = false)
     private String fullName;
 
     // Email сотрудника
-    @Column(name = "email", unique = true, length = 255)
+    @Column(name = "email", unique = true)
     private String email;
 
     // Должность

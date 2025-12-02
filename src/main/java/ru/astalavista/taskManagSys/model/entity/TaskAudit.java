@@ -1,4 +1,4 @@
-package ru.astalavista.taskManagSys.models;
+package ru.astalavista.taskManagSys.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -6,10 +6,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "task_audit_log")
 @Data
+@Table(name = "task_audit_log")
 public class TaskAudit {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

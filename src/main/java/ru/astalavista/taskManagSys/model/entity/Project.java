@@ -1,16 +1,16 @@
-package ru.astalavista.taskManagSys.models;
+package ru.astalavista.taskManagSys.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "projects")
 @Data
+@Table(name = "projects")
 public class Project {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,7 +20,7 @@ public class Project {
     private String code;
 
     // Название проекта
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false)
     private String name;
 
     // Описание проекта
@@ -42,5 +42,5 @@ public class Project {
     // cascade = CascadeType.ALL - при удалении проекта удалятся все его задачи
     // fetch = FetchType.LAZY - задачи загружаются только когда к ним обращаются
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private java.util.List<Task> tasks;
+    private List<Task> tasks;
 }
