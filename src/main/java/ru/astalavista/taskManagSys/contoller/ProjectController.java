@@ -1,5 +1,6 @@
 package ru.astalavista.taskManagSys.contoller;
 
+import jakarta.validation.Valid;
 import ru.astalavista.taskManagSys.model.dto.ProjectDTO;
 import ru.astalavista.taskManagSys.service.ProjectService;
 import java.util.List;
@@ -15,7 +16,7 @@ public class ProjectController {
 
 
     @PostMapping
-    public ProjectDTO create(@RequestBody ProjectDTO dto) {
+    public ProjectDTO create(@Valid @RequestBody ProjectDTO dto) {
         return service.create(dto);
     }
 

@@ -1,5 +1,6 @@
 package ru.astalavista.taskManagSys.contoller;
 
+import jakarta.validation.Valid;
 import ru.astalavista.taskManagSys.model.dto.EmployeeDTO;
 import ru.astalavista.taskManagSys.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public EmployeeDTO create(@RequestBody EmployeeDTO dto) {
+    public EmployeeDTO create(@Valid @RequestBody EmployeeDTO dto) {
         return service.create(dto);
     }
 

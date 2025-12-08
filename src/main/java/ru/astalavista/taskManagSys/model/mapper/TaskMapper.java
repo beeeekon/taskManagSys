@@ -21,8 +21,8 @@ public interface TaskMapper {
 
     @Named("mapTaskListToIds")
     default List<Long> mapTaskListToIds(List<Task> tasks) {
-        if (tasks == null)
-            return null;
+        if (tasks == null|| tasks.isEmpty())
+            return List.of();
 
         return tasks.stream()
                 .map(Task::getId)

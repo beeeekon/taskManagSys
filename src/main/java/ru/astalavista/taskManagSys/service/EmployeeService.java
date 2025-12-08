@@ -19,7 +19,6 @@ public class EmployeeService {
     private final EmployeeMapper mapper;
 
 
-
     public List<EmployeeDTO> getAll() {
         return repository.findAll().stream()
             .map(mapper::toDTO)

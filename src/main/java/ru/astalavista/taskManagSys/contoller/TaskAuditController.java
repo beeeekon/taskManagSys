@@ -1,5 +1,6 @@
 package ru.astalavista.taskManagSys.contoller;
 
+import jakarta.validation.Valid;
 import ru.astalavista.taskManagSys.model.dto.TaskAuditDTO;
 import ru.astalavista.taskManagSys.service.TaskAuditService;
 import java.util.List;
@@ -16,7 +17,7 @@ public class TaskAuditController {
 
 
     @PostMapping
-    public TaskAuditDTO create(@RequestBody TaskAuditDTO dto) {
+    public TaskAuditDTO create(@Valid @RequestBody TaskAuditDTO dto) {
         return service.create(dto);
     }
 

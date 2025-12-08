@@ -3,11 +3,13 @@ package ru.astalavista.taskManagSys.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import ru.astalavista.taskManagSys.model.entity.Employee;
+import ru.astalavista.taskManagSys.model.entity.Project;
 import ru.astalavista.taskManagSys.model.entity.Task;
 import ru.astalavista.taskManagSys.model.enums.TaskStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
@@ -17,4 +19,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     // Найти просроченные задачи
     List<Task> findByDueDateBeforeAndStatusNot(LocalDateTime date, TaskStatus status);
+
+    Optional<Task> findTopByProjectOrderByPublicIdDesc(Project project);
 }
