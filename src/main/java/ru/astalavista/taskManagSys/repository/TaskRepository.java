@@ -1,28 +1,3 @@
-/*package ru.astalavista.taskManagSys.repository;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-import ru.astalavista.taskManagSys.model.entity.Employee;
-import ru.astalavista.taskManagSys.model.entity.Project;
-import ru.astalavista.taskManagSys.model.entity.Task;
-import ru.astalavista.taskManagSys.model.enums.TaskStatus;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-@Repository
-public interface TaskRepository extends JpaRepository<Task, Long> {
-
-    // Найти все задачи конкретного исполнителя
-    List<Task> findByAssignee(Employee assignee);
-
-    // Найти просроченные задачи
-    List<Task> findByDueDateBeforeAndStatusNot(LocalDateTime date, TaskStatus status);
-
-    Optional<Task> findTopByProjectOrderByPublicIdDesc(Project project);
-}
- */
 package ru.astalavista.taskManagSys.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -59,7 +34,16 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByDueDateBeforeAndStatusNot(LocalDateTime date, TaskStatus status);
 
+    // Исправленный метод: поиск по projectId, а не по Project entity
     Optional<Task> findTopByProjectIdOrderByPublicIdDesc(Long projectId);
+
+    // Сохраняем старый метод для совместимости (опционально)
+    default Optional<Task> findTopByProjectOrderByPublicIdDesc(ru.astalavista.taskManagSys.model.entity.Project project) {
+        if (project == null || project.getId() == null) {
+            return Optional.empty();
+        }
+        return findTopByProjectIdOrderByPublicIdDesc(project.getId());
+    }
 
     // Для поиска по публичному ID
     Optional<Task> findByPublicId(String publicId);

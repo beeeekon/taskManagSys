@@ -1,126 +1,3 @@
-/*package ru.astalavista.taskManagSys.service;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import ru.astalavista.taskManagSys.config.AuditContextProvider;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
-import ru.astalavista.taskManagSys.model.entity.Task;
-import ru.astalavista.taskManagSys.model.entity.TaskAudit;
-import ru.astalavista.taskManagSys.model.enums.TaskStatus;
-import ru.astalavista.taskManagSys.model.mapper.TaskMapper;
-import ru.astalavista.taskManagSys.repository.TaskAuditRepository;
-import ru.astalavista.taskManagSys.repository.TaskRepository;
-
-import java.util.List;
-import java.util.Optional;
-
-@Service
-@RequiredArgsConstructor
-public class TaskService {
-
-    private final TaskRepository repository;
-    private final TaskAuditRepository auditRepository;
-    private final TaskMapper mapper;
-    private final TaskNumberGeneratorService numberGeneratorService;
-    @Autowired
-    private AuditContextProvider auditContextProvider;
-
-    // ---------- CREATE ----------
-    @Transactional
-    public TaskDTO create(TaskDTO dto, String changedBy, String changeSource) {
-
-        //TODO кто изменил есть инфа в dto, откуда меняли скорее всего тянуть из security
-        Task task = mapper.toEntity(dto);
-        task.setPublicId(numberGeneratorService.generateNumber(task.getProject()));
-
-        Task saved = repository.save(task);
-
-        createAudit(saved, null, saved.toString(), changedBy, changeSource, "CREATE");
-
-        return mapper.toDTO(saved);
-    }
-
-    // ---------- UPDATE ----------
-    @Transactional
-    public Optional<TaskDTO> update(Long id, TaskDTO dto, String changedBy, String changeSource) {
-        return repository.findById(id)
-                .map(existing -> {
-                    String oldValue = existing.toString();
-
-                    mapper.updateEntityFromDTO(dto, existing);
-                    Task updated = repository.save(existing);
-
-                    if (!oldValue.equals(updated.toString())) {
-                        createAudit(updated, oldValue, updated.toString(), changedBy, changeSource, "UPDATE");
-                    }
-
-                    return mapper.toDTO(updated);
-                });
-    }
-
-    // ---------- DELETE ----------
-    @Transactional
-    public void delete(Long id, String changedBy, String changeSource) {
-        repository.findById(id).ifPresent(task -> {
-            String oldValue = task.toString();
-            repository.delete(task);
-
-            createAudit(task, oldValue, null, changedBy, changeSource, "DELETE");
-        });
-    }
-
-    // ---------- CHANGE STATUS ----------
-    @Transactional
-    public TaskDTO changeStatus(Long taskId, TaskStatus newStatus, String changedBy, String changeSource) {
-        Task task = repository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
-
-        if (task.getStatus() != newStatus) {
-            String oldValue = task.toString();
-            task.setStatus(newStatus);
-            Task updated = repository.save(task);
-
-            createAudit(updated, oldValue, updated.toString(), changedBy, changeSource, "UPDATE");
-            return mapper.toDTO(updated);
-        }
-        return mapper.toDTO(task);
-    }
-
-    // ---------- READ ----------
-    public List<TaskDTO> findAll() {
-        return repository.findAll().stream().map(mapper::toDTO).toList();
-    }
-
-    public Optional<TaskDTO> findById(Long id) {
-        return repository.findById(id).map(mapper::toDTO);
-    }
-
-    public List<TaskDTO> getTasksByProject(Long projectId) {
-        // TODO: реализовать через repository
-        return List.of();
-    }
-
-    public List<TaskDTO> getOverdueTasks() {
-        // TODO: реализовать через кастомный метод репозитория
-        return List.of();
-    }
-
-    // ---------- AUDIT ----------
-    private void createAudit(Task task, String oldValue, String newValue, String changedBy, String changeSource, String action) {
-        TaskAudit audit = new TaskAudit();
-        audit.setTask(task);
-        audit.setFieldName(action);
-        audit.setOldValue(oldValue);
-        audit.setNewValue(newValue);
-        audit.setChangedBy(changedBy);
-        audit.setChangeSource(changeSource);
-        auditRepository.save(audit);
-    }
-}
-*/
-
 package ru.astalavista.taskManagSys.service;
 
 import lombok.RequiredArgsConstructor;
@@ -137,6 +14,7 @@ import ru.astalavista.taskManagSys.repository.EmployeeRepository;
 import ru.astalavista.taskManagSys.repository.ProjectRepository;
 import ru.astalavista.taskManagSys.repository.TaskRepository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -182,7 +60,7 @@ public class TaskService {
         Task savedTask = taskRepository.save(task);
         log.info("Task created successfully: {} with ID: {}", savedTask.getPublicId(), savedTask.getId());
 
-        // 7. Логирование аудита (отдельный метод/сервис)
+        // 7. Логирование аудита
         taskAuditLogger.logTaskCreation(savedTask);
 
         return taskMapper.toDTO(savedTask);
@@ -265,6 +143,29 @@ public class TaskService {
         }
 
         return taskMapper.toDTO(task);
+    }
+
+    // ---------- ФИЛЬТРАЦИЯ ----------
+    public List<TaskDTO> findFilteredTasks(Long assigneeId, Long projectId,
+                                           TaskStatus status, boolean onlyOpen,
+                                           boolean onlyOverdue) {
+        log.info("Filtering tasks: assigneeId={}, projectId={}, status={}, onlyOpen={}, onlyOverdue={}",
+                assigneeId, projectId, status, onlyOpen, onlyOverdue);
+
+        // Получаем все задачи
+        List<Task> allTasks = taskRepository.findAll();
+
+        // Фильтруем
+        return allTasks.stream()
+                .filter(task -> assigneeId == null ||
+                        (task.getAssignee() != null && task.getAssignee().getId().equals(assigneeId)))
+                .filter(task -> projectId == null ||
+                        (task.getProject() != null && task.getProject().getId().equals(projectId)))
+                .filter(task -> status == null || task.getStatus() == status)
+                .filter(task -> !onlyOpen || task.getStatus() != TaskStatus.CLOSED)
+                .filter(task -> !onlyOverdue || isTaskOverdue(task))
+                .map(taskMapper::toDTO)
+                .toList();
     }
 
     // ---------- UTILITY METHODS ----------
@@ -413,6 +314,18 @@ public class TaskService {
                     .orElseThrow(() -> new RuntimeException("Employee not found"));
             task.setAssignee(newAssignee);
         }
+    }
+
+    private boolean isTaskOverdue(Task task) {
+        if (task.getStatus() == TaskStatus.CLOSED) {
+            return false;
+        }
+
+        if (task.getDueDate() == null) {
+            return false;
+        }
+
+        return task.getDueDate().isBefore(LocalDateTime.now());
     }
 
     public Optional<TaskDTO> findByPublicId(String publicId) {
