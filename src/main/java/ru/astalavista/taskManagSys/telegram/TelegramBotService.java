@@ -90,7 +90,7 @@ public class TelegramBotService {
             return showHelp(chatId);
         } else if (lowerText.contains("/register") || lowerText.contains("регистрация")) {
             return confirmRegistration(chatId, employee);
-        } else if (lowerText.contains("обновить") || lowerText.contains("refresh")) {
+        } else if (lowerText.contains("/refresh") || lowerText.contains("обновить")) {
             return sendEmployeeTasks(chatId, employee.getId());
         } else {
             return createMessage(chatId,
