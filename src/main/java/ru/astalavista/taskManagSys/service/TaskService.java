@@ -13,6 +13,7 @@ import ru.astalavista.taskManagSys.model.mapper.TaskMapper;
 import ru.astalavista.taskManagSys.repository.EmployeeRepository;
 import ru.astalavista.taskManagSys.repository.ProjectRepository;
 import ru.astalavista.taskManagSys.repository.TaskRepository;
+import ru.astalavista.taskManagSys.telegram.TaskManagementBot;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final TaskNumberGeneratorService numberGeneratorService;
     private final TaskAuditLoggerService taskAuditLogger;
+    private final TaskManagementBot taskManagementBot;
 
     // ---------- CREATE ----------
     @Transactional
@@ -62,6 +64,9 @@ public class TaskService {
 
         // 7. Логирование аудита
         taskAuditLogger.logTaskCreation(savedTask);
+
+        // 8. Отправляем уведомление в Telegram
+        sendTelegramNotificationForNewTask(savedTask);
 
         return taskMapper.toDTO(savedTask);
     }
@@ -137,6 +142,11 @@ public class TaskService {
             // Обновляем статус
             task.setStatus(newStatus);
             Task updatedTask = taskRepository.save(task);
+
+            // Отправляем уведомление если задача закрыта
+            if (newStatus == TaskStatus.CLOSED) {
+                sendTelegramNotificationForCompletedTask(updatedTask);
+            }
 
             log.info("Task status changed: {} -> {}", oldStatus, newStatus);
             return taskMapper.toDTO(updatedTask);
@@ -328,10 +338,128 @@ public class TaskService {
         return task.getDueDate().isBefore(LocalDateTime.now());
     }
 
+    /**
+     * Отправляет уведомление в Telegram о новой задаче
+     */
+    private void sendTelegramNotificationForNewTask(Task task) {
+        if (task.getAssignee() != null && task.getAssignee().getTelegramChatId() != null) {
+            try {
+                String chatId = task.getAssignee().getTelegramChatId();
+                String taskTitle = task.getTitle();
+                String taskPublicId = task.getPublicId();
+
+                log.info("Sending Telegram notification for new task to employee: {}, task: {}",
+                        task.getAssignee().getEmail(), taskPublicId);
+
+                taskManagementBot.sendNewTaskNotification(chatId, taskTitle, taskPublicId);
+            } catch (Exception e) {
+                log.error("Failed to send Telegram notification for new task: {}", task.getPublicId(), e);
+            }
+        } else {
+            log.debug("No Telegram notification sent: assignee is null or has no chatId");
+        }
+    }
+
+    /**
+     * Отправляет уведомление в Telegram о завершении задачи
+     */
+    private void sendTelegramNotificationForCompletedTask(Task task) {
+        if (task.getAssignee() != null && task.getAssignee().getTelegramChatId() != null) {
+            try {
+                String chatId = task.getAssignee().getTelegramChatId();
+                String taskTitle = task.getTitle();
+                String taskPublicId = task.getPublicId();
+
+                log.info("Sending Telegram notification for completed task to employee: {}, task: {}",
+                        task.getAssignee().getEmail(), taskPublicId);
+
+                taskManagementBot.sendTaskCompletedNotification(chatId, taskTitle, taskPublicId);
+            } catch (Exception e) {
+                log.error("Failed to send Telegram notification for completed task: {}", task.getPublicId(), e);
+            }
+        } else {
+            log.debug("No Telegram notification sent for completed task: assignee is null or has no chatId");
+        }
+    }
+
+    /**
+     * Находит задачу по публичному ID
+     */
     public Optional<TaskDTO> findByPublicId(String publicId) {
         return taskRepository.findAll().stream()
-                .filter(task -> publicId.equals(task.getPublicId()))
+                .filter(task -> publicId != null && publicId.equals(task.getPublicId()))
                 .findFirst()
                 .map(taskMapper::toDTO);
+    }
+
+    /**
+     * Получает задачи с истекшим сроком для конкретного сотрудника
+     */
+    public List<TaskDTO> findOverdueTasksByAssignee(Long assigneeId) {
+        List<TaskDTO> allTasks = findTasksByAssignee(assigneeId);
+        return allTasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.CLOSED)
+                .filter(task -> task.getDueDate() != null && task.getDueDate().isBefore(LocalDateTime.now()))
+                .toList();
+    }
+
+    /**
+     * Получает статистику по задачам сотрудника
+     */
+    public TaskStatistics getTaskStatistics(Long employeeId) {
+        List<TaskDTO> employeeTasks = findTasksByAssignee(employeeId);
+
+        long totalTasks = employeeTasks.size();
+        long openTasks = employeeTasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.CLOSED)
+                .count();
+        long overdueTasks = employeeTasks.stream()
+                .filter(task -> task.getStatus() != TaskStatus.CLOSED)
+                .filter(task -> task.getDueDate() != null && task.getDueDate().isBefore(LocalDateTime.now()))
+                .count();
+        long completedTasks = employeeTasks.stream()
+                .filter(task -> task.getStatus() == TaskStatus.CLOSED)
+                .count();
+
+        return new TaskStatistics(totalTasks, openTasks, overdueTasks, completedTasks);
+    }
+
+    /**
+     * Внутренний класс для статистики задач
+     */
+    public static class TaskStatistics {
+        private final long totalTasks;
+        private final long openTasks;
+        private final long overdueTasks;
+        private final long completedTasks;
+
+        public TaskStatistics(long totalTasks, long openTasks, long overdueTasks, long completedTasks) {
+            this.totalTasks = totalTasks;
+            this.openTasks = openTasks;
+            this.overdueTasks = overdueTasks;
+            this.completedTasks = completedTasks;
+        }
+
+        public long getTotalTasks() {
+            return totalTasks;
+        }
+
+        public long getOpenTasks() {
+            return openTasks;
+        }
+
+        public long getOverdueTasks() {
+            return overdueTasks;
+        }
+
+        public long getCompletedTasks() {
+            return completedTasks;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Total: %d, Open: %d, Overdue: %d, Completed: %d",
+                    totalTasks, openTasks, overdueTasks, completedTasks);
+        }
     }
 }
