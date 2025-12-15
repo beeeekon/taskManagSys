@@ -1,5 +1,6 @@
 package ru.astalavista.taskManagSys.service;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -35,8 +36,6 @@ public class TaskService {
     private final TaskAuditLoggerService taskAuditLogger;
     private final ApplicationEventPublisher taskEventPublisher;
 
-
-    // ---------- CREATE ----------
     @Transactional
     public TaskDTO create(TaskDTO dto) {
         log.info("Creating new task: {}", dto.getTitle());
@@ -76,40 +75,38 @@ public class TaskService {
         return taskMapper.toDTO(savedTask);
     }
 
-    // ---------- UPDATE ----------
     @Transactional
     public Optional<TaskDTO> update(Long id, TaskDTO dto) {
         log.info("Updating task with ID: {}", id);
 
         return taskRepository.findById(id)
-                .map(existingTask -> {
-                    // Сохраняем старое состояние для сравнения
-                    String oldState = TaskAuditHelperService.getTaskState(existingTask);
+            .map(existingTask -> {
+                // Сохраняем старое состояние для сравнения
+                String oldState = TaskAuditHelperService.getTaskState(existingTask);
 
-                    // Обновляем основные поля через маппер
-                    taskMapper.updateEntityFromDTO(dto, existingTask);
+                // Обновляем основные поля через маппер
+                taskMapper.updateEntityFromDTO(dto, existingTask);
 
-                    // Обновляем зависимости если изменились
-                    updateDependencies(existingTask, dto);
+                // Обновляем зависимости если изменились
+                updateDependencies(existingTask, dto);
 
-                    // Обновляем связанные задачи
-                    processLinkedTasks(existingTask, dto.getLinkedTaskIds());
+                // Обновляем связанные задачи
+                processLinkedTasks(existingTask, dto.getLinkedTaskIds());
 
-                    // Сохраняем изменения
-                    Task updatedTask = taskRepository.save(existingTask);
-                    String newState = TaskAuditHelperService.getTaskState(updatedTask);
+                // Сохраняем изменения
+                Task updatedTask = taskRepository.save(existingTask);
+                String newState = TaskAuditHelperService.getTaskState(updatedTask);
 
-                    // Логируем изменения если они были
-                    if (!oldState.equals(newState)) {
-                        taskAuditLogger.logTaskUpdate(updatedTask, oldState, newState);
-                    }
+                // Логируем изменения если они были
+                if (!oldState.equals(newState)) {
+                    taskAuditLogger.logTaskUpdate(updatedTask, oldState, newState);
+                }
 
-                    log.info("Task updated successfully: {}", updatedTask.getPublicId());
-                    return taskMapper.toDTO(updatedTask);
-                });
+                log.info("Task updated successfully: {}", updatedTask.getPublicId());
+                return taskMapper.toDTO(updatedTask);
+            });
     }
 
-    // ---------- DELETE ----------
     @Transactional
     public void delete(Long id) {
         log.info("Deleting task with ID: {}", id);
@@ -126,7 +123,6 @@ public class TaskService {
         });
     }
 
-    // ---------- CHANGE STATUS ----------
     @Transactional
     public TaskDTO changeStatus(Long taskId, TaskStatus newStatus) {
         log.info("Changing status for task ID: {} to: {}", taskId, newStatus);
@@ -162,7 +158,6 @@ public class TaskService {
         return taskMapper.toDTO(task);
     }
 
-    // ---------- ФИЛЬТРАЦИЯ ----------
     public List<TaskDTO> findFilteredTasks(Long assigneeId, Long projectId,
                                            TaskStatus status, boolean onlyOpen,
                                            boolean onlyOverdue) {
@@ -174,18 +169,17 @@ public class TaskService {
 
         // Фильтруем
         return allTasks.stream()
-                .filter(task -> assigneeId == null ||
-                        (task.getAssignee() != null && task.getAssignee().getId().equals(assigneeId)))
-                .filter(task -> projectId == null ||
-                        (task.getProject() != null && task.getProject().getId().equals(projectId)))
-                .filter(task -> status == null || task.getStatus() == status)
-                .filter(task -> !onlyOpen || task.getStatus() != TaskStatus.CLOSED)
-                .filter(task -> !onlyOverdue || isTaskOverdue(task))
-                .map(taskMapper::toDTO)
-                .toList();
+            .filter(task -> assigneeId == null ||
+                    (task.getAssignee() != null && task.getAssignee().getId().equals(assigneeId)))
+            .filter(task -> projectId == null ||
+                    (task.getProject() != null && task.getProject().getId().equals(projectId)))
+            .filter(task -> status == null || task.getStatus() == status)
+            .filter(task -> !onlyOpen || task.getStatus() != TaskStatus.CLOSED)
+            .filter(task -> !onlyOverdue || isTaskOverdue(task))
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
-    // ---------- UTILITY METHODS ----------
     @Transactional
     public void addTimeSpent(Long taskId, Integer hours) {
         taskRepository.findById(taskId).ifPresent(task -> {
@@ -238,49 +232,47 @@ public class TaskService {
         return taskMapper.toDTO(mainTask);
     }
 
-    // ---------- READ METHODS ----------
     public List<TaskDTO> findAll() {
         return taskRepository.findAll().stream()
-                .map(taskMapper::toDTO)
-                .toList();
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
     public Optional<TaskDTO> findById(Long id) {
         return taskRepository.findById(id)
-                .map(taskMapper::toDTO);
+            .map(taskMapper::toDTO);
     }
 
     public List<TaskDTO> findTasksByAssignee(Long assigneeId) {
         return taskRepository.findByAssigneeId(assigneeId).stream()
-                .map(taskMapper::toDTO)
-                .toList();
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
     public List<TaskDTO> findTasksByProject(Long projectId) {
         return taskRepository.findByProjectId(projectId).stream()
-                .map(taskMapper::toDTO)
-                .toList();
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
     public List<TaskDTO> findTasksByStatus(TaskStatus status) {
         return taskRepository.findByStatus(status).stream()
-                .map(taskMapper::toDTO)
-                .toList();
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
     public List<TaskDTO> findOverdueTasks() {
         return taskRepository.findOverdueTasks().stream()
-                .map(taskMapper::toDTO)
-                .toList();
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
     public List<TaskDTO> findOpenTasks() {
         return taskRepository.findOpenTasks().stream()
-                .map(taskMapper::toDTO)
-                .toList();
+            .map(taskMapper::toDTO)
+            .toList();
     }
 
-    // ---------- PRIVATE HELPER METHODS ----------
     private Project validateAndGetProject(Long projectId) {
         if (projectId == null) {
             throw new IllegalArgumentException("Project ID is required");
@@ -390,6 +382,7 @@ public class TaskService {
     /**
      * Внутренний класс для статистики задач
      */
+    @Getter
     public static class TaskStatistics {
         private final long totalTasks;
         private final long openTasks;
@@ -401,22 +394,6 @@ public class TaskService {
             this.openTasks = openTasks;
             this.overdueTasks = overdueTasks;
             this.completedTasks = completedTasks;
-        }
-
-        public long getTotalTasks() {
-            return totalTasks;
-        }
-
-        public long getOpenTasks() {
-            return openTasks;
-        }
-
-        public long getOverdueTasks() {
-            return overdueTasks;
-        }
-
-        public long getCompletedTasks() {
-            return completedTasks;
         }
 
         @Override

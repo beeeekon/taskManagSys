@@ -3,13 +3,9 @@ package ru.astalavista.taskManagSys.service;
 import lombok.experimental.UtilityClass;
 import ru.astalavista.taskManagSys.model.entity.Task;
 
-//класс для детального аудита (для замены toString)
-//@UtilityClass
+// Класс для детального аудита
+@UtilityClass
 public class TaskAuditHelperService {
-    // Приватный конструктор, чтобы нельзя было создать экземпляр
-    private TaskAuditHelperService() {
-        throw new UnsupportedOperationException("Utility class");
-    }
 
     public static String getTaskState(Task task) {
         if (task == null) return "null";
@@ -29,9 +25,11 @@ public class TaskAuditHelperService {
     }
 
     public static String getFieldChangeState(String fieldName, Object oldValue, Object newValue) {
-        return String.format("%s: %s -> %s",
-                fieldName,
-                oldValue != null ? oldValue : "null",
-                newValue != null ? newValue : "null");
+        return String.format(
+            "%s: %s -> %s",
+            fieldName,
+            oldValue != null ? oldValue : "null",
+            newValue != null ? newValue : "null"
+        );
     }
 }

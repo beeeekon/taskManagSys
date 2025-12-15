@@ -14,7 +14,6 @@ public class ProjectController {
 
     private final ProjectService service;
 
-
     @PostMapping
     public ProjectDTO create(@Valid @RequestBody ProjectDTO dto) {
         return service.create(dto);

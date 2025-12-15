@@ -16,8 +16,6 @@ public class ProjectService {
     private final ProjectRepository repository;
     private final ProjectMapper mapper;
 
-
-
     public ProjectDTO create(ProjectDTO dto) {
         Project project = mapper.toEntity(dto);
         Project saved = repository.save(project);

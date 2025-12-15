@@ -17,15 +17,15 @@ public class TaskAuditLoggerService {
 
     private final TaskAuditRepository taskAuditRepository;
     private final AuditContextProvider auditContextProvider;
-    TaskAuditHelperService TaskAuditHelper;
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logTaskCreation(Task task) {
         createAuditRecord(
-                task,
-                "CREATE",
-                null,
-                TaskAuditHelper.getTaskState(task),
-                "Task created"
+            task,
+            "CREATE",
+            null,
+            TaskAuditHelperService.getTaskState(task),
+            "Task created"
         );
     }
 
@@ -33,11 +33,11 @@ public class TaskAuditLoggerService {
     public void logTaskUpdate(Task task, String oldState, String newState) {
         if (!oldState.equals(newState)) {
             createAuditRecord(
-                    task,
-                    "UPDATE",
-                    oldState,
-                    newState,
-                    "Task updated"
+                task,
+                "UPDATE",
+                oldState,
+                newState,
+                "Task updated"
             );
         }
     }
@@ -45,46 +45,46 @@ public class TaskAuditLoggerService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logTaskDeletion(Task task, String oldState) {
         createAuditRecord(
-                task,
-                "DELETE",
-                oldState,
-                null,
-                "Task deleted"
+            task,
+            "DELETE",
+            oldState,
+            null,
+            "Task deleted"
         );
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logStatusChange(Task task, String oldStatus, String newStatus) {
         createAuditRecord(
-                task,
-                "STATUS_CHANGE",
-                oldStatus,
-                newStatus,
-                String.format("Status changed: %s -> %s", oldStatus, newStatus)
+            task,
+            "STATUS_CHANGE",
+            oldStatus,
+            newStatus,
+            String.format("Status changed: %s -> %s", oldStatus, newStatus)
         );
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logFieldChange(Task task, String fieldName, Object oldValue, Object newValue) {
-        String changeDescription = TaskAuditHelper.getFieldChangeState(fieldName, oldValue, newValue);
+        String changeDescription = TaskAuditHelperService.getFieldChangeState(fieldName, oldValue, newValue);
 
         createAuditRecord(
-                task,
-                "FIELD_CHANGE",
-                String.valueOf(oldValue),
-                String.valueOf(newValue),
-                changeDescription
+            task,
+            "FIELD_CHANGE",
+            String.valueOf(oldValue),
+            String.valueOf(newValue),
+            changeDescription
         );
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logCustomAction(Task task, String action, String description) {
         createAuditRecord(
-                task,
-                action,
-                null,
-                null,
-                description
+            task,
+            action,
+            null,
+            null,
+            description
         );
     }
 
