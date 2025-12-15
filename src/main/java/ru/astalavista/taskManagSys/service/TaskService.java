@@ -2,7 +2,7 @@ package ru.astalavista.taskManagSys.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.astalavista.taskManagSys.model.dto.TaskDTO;
@@ -10,11 +10,12 @@ import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.entity.Project;
 import ru.astalavista.taskManagSys.model.entity.Task;
 import ru.astalavista.taskManagSys.model.enums.TaskStatus;
+import ru.astalavista.taskManagSys.model.event.TaskCompletedEvent;
+import ru.astalavista.taskManagSys.model.event.TaskCreatedEvent;
 import ru.astalavista.taskManagSys.model.mapper.TaskMapper;
 import ru.astalavista.taskManagSys.repository.EmployeeRepository;
 import ru.astalavista.taskManagSys.repository.ProjectRepository;
 import ru.astalavista.taskManagSys.repository.TaskRepository;
-import ru.astalavista.taskManagSys.telegram.TaskManagementBot;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,7 +33,8 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final TaskNumberGeneratorService numberGeneratorService;
     private final TaskAuditLoggerService taskAuditLogger;
-    private final TaskManagementBot taskManagementBot;
+    private final ApplicationEventPublisher taskEventPublisher;
+
 
     // ---------- CREATE ----------
     @Transactional
@@ -67,7 +69,9 @@ public class TaskService {
         taskAuditLogger.logTaskCreation(savedTask);
 
         // 8. Отправляем уведомление в Telegram
-        sendTelegramNotificationForNewTask(savedTask);
+        taskEventPublisher.publishEvent(
+            new TaskCreatedEvent(savedTask)
+        );
 
         return taskMapper.toDTO(savedTask);
     }
@@ -146,7 +150,9 @@ public class TaskService {
 
             // Отправляем уведомление если задача закрыта
             if (newStatus == TaskStatus.CLOSED) {
-                sendTelegramNotificationForCompletedTask(updatedTask);
+                taskEventPublisher.publishEvent(
+                    new TaskCompletedEvent(updatedTask)
+                );
             }
 
             log.info("Task status changed: {} -> {}", oldStatus, newStatus);
@@ -337,50 +343,6 @@ public class TaskService {
         }
 
         return task.getDueDate().isBefore(LocalDateTime.now());
-    }
-
-    /**
-     * Отправляет уведомление в Telegram о новой задаче
-     */
-    private void sendTelegramNotificationForNewTask(Task task) {
-        if (task.getAssignee() != null && task.getAssignee().getTelegramChatId() != null) {
-            try {
-                String chatId = task.getAssignee().getTelegramChatId();
-                String taskTitle = task.getTitle();
-                String taskPublicId = task.getPublicId();
-
-                log.info("Sending Telegram notification for new task to employee: {}, task: {}",
-                        task.getAssignee().getEmail(), taskPublicId);
-
-                taskManagementBot.sendNewTaskNotification(chatId, taskTitle, taskPublicId);
-            } catch (Exception e) {
-                log.error("Failed to send Telegram notification for new task: {}", task.getPublicId(), e);
-            }
-        } else {
-            log.debug("No Telegram notification sent: assignee is null or has no chatId");
-        }
-    }
-
-    /**
-     * Отправляет уведомление в Telegram о завершении задачи
-     */
-    private void sendTelegramNotificationForCompletedTask(Task task) {
-        if (task.getAssignee() != null && task.getAssignee().getTelegramChatId() != null) {
-            try {
-                String chatId = task.getAssignee().getTelegramChatId();
-                String taskTitle = task.getTitle();
-                String taskPublicId = task.getPublicId();
-
-                log.info("Sending Telegram notification for completed task to employee: {}, task: {}",
-                        task.getAssignee().getEmail(), taskPublicId);
-
-                taskManagementBot.sendTaskCompletedNotification(chatId, taskTitle, taskPublicId);
-            } catch (Exception e) {
-                log.error("Failed to send Telegram notification for completed task: {}", task.getPublicId(), e);
-            }
-        } else {
-            log.debug("No Telegram notification sent for completed task: assignee is null or has no chatId");
-        }
     }
 
     /**
