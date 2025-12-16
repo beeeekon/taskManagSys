@@ -2,7 +2,6 @@ package ru.astalavista.taskManagSys.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.astalavista.taskManagSys.config.AuditContextProvider;
 import ru.astalavista.taskManagSys.model.entity.Task;
@@ -18,7 +17,7 @@ public class TaskAuditLoggerService {
     private final TaskAuditRepository taskAuditRepository;
     private final AuditContextProvider auditContextProvider;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logTaskCreation(Task task) {
         createAuditRecord(
             task,
@@ -29,7 +28,7 @@ public class TaskAuditLoggerService {
         );
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logTaskUpdate(Task task, String oldState, String newState) {
         if (!oldState.equals(newState)) {
             createAuditRecord(
@@ -42,7 +41,7 @@ public class TaskAuditLoggerService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logTaskDeletion(Task task, String oldState) {
         createAuditRecord(
             task,
@@ -53,7 +52,7 @@ public class TaskAuditLoggerService {
         );
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logStatusChange(Task task, String oldStatus, String newStatus) {
         createAuditRecord(
             task,
@@ -64,7 +63,7 @@ public class TaskAuditLoggerService {
         );
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logFieldChange(Task task, String fieldName, Object oldValue, Object newValue) {
         String changeDescription = TaskAuditHelperService.getFieldChangeState(fieldName, oldValue, newValue);
 
@@ -77,7 +76,7 @@ public class TaskAuditLoggerService {
         );
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logCustomAction(Task task, String action, String description) {
         createAuditRecord(
             task,
@@ -88,8 +87,13 @@ public class TaskAuditLoggerService {
         );
     }
 
-    private void createAuditRecord(Task task, String action, String oldValue,
-                                   String newValue, String description) {
+    private void createAuditRecord(
+            Task task,
+            String action,
+            String oldValue,
+            String newValue,
+            String description
+    ) {
         TaskAudit audit = new TaskAudit();
         audit.setTask(task);
         audit.setFieldName(action);

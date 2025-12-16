@@ -5,11 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskDTO;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.repository.EmployeeRepository;
 import ru.astalavista.taskManagSys.service.TaskService;
-import ru.astalavista.taskManagSys.telegram.TaskManagementBot;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

@@ -2,8 +2,9 @@ package ru.astalavista.taskManagSys.service.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.entity.Task;
 import ru.astalavista.taskManagSys.model.event.TaskCompletedEvent;
@@ -20,7 +21,7 @@ public class TaskTelegramNotificationListener {
     /**
      * Новая задача
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTaskCreated(TaskCreatedEvent event) {
         Task task = event.task();
         Employee assignee = task.getAssignee();
@@ -46,7 +47,7 @@ public class TaskTelegramNotificationListener {
     /**
      * Завершение задачи
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onTaskCompleted(TaskCompletedEvent event) {
         Task task = event.task();
         Employee assignee = task.getAssignee();

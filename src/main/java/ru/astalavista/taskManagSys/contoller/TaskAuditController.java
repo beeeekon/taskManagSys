@@ -1,6 +1,6 @@
 package ru.astalavista.taskManagSys.contoller;
 
-import ru.astalavista.taskManagSys.model.dto.TaskAuditDTO;
+import ru.astalavista.taskManagSys.model.dto.taskaudit.TaskAuditDTO;
 import ru.astalavista.taskManagSys.service.TaskAuditService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

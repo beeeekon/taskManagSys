@@ -1,6 +1,8 @@
 package ru.astalavista.taskManagSys.service;
 
-import ru.astalavista.taskManagSys.model.dto.ProjectDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectUpdateDTO;
 import ru.astalavista.taskManagSys.model.entity.Project;
 import ru.astalavista.taskManagSys.model.mapper.ProjectMapper;
 import ru.astalavista.taskManagSys.repository.ProjectRepository;
@@ -16,13 +18,13 @@ public class ProjectService {
     private final ProjectRepository repository;
     private final ProjectMapper mapper;
 
-    public ProjectDTO create(ProjectDTO dto) {
+    public ProjectDTO create(ProjectCreateDTO dto) {
         Project project = mapper.toEntity(dto);
         Project saved = repository.save(project);
         return mapper.toDTO(saved);
     }
 
-    public Optional<ProjectDTO> update(Long id, ProjectDTO dto) {
+    public Optional<ProjectDTO> update(Long id, ProjectUpdateDTO dto) {
         return repository.findById(id)
             .map(existing -> {
                 mapper.updateEntityFromDTO(dto, existing);

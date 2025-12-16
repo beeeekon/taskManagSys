@@ -1,7 +1,9 @@
 package ru.astalavista.taskManagSys.contoller;
 
 import jakarta.validation.Valid;
-import ru.astalavista.taskManagSys.model.dto.EmployeeDTO;
+import ru.astalavista.taskManagSys.model.dto.employee.EmployeeCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.employee.EmployeeDTO;
+import ru.astalavista.taskManagSys.model.dto.employee.EmployeeUpdateDTO;
 import ru.astalavista.taskManagSys.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -25,12 +27,12 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public EmployeeDTO create(@Valid @RequestBody EmployeeDTO dto) {
+    public EmployeeDTO create(@Valid @RequestBody EmployeeCreateDTO dto) {
         return service.create(dto);
     }
 
     @PutMapping("/{id}")
-    public EmployeeDTO update(@PathVariable Long id, @RequestBody EmployeeDTO dto) {
+    public EmployeeDTO update(@PathVariable Long id, @RequestBody EmployeeUpdateDTO dto) {
         return service.update(id, dto).orElse(null);
     }
 

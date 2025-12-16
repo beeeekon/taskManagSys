@@ -5,12 +5,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+@Getter
 @Component
 public class AuditContextProvider {
 
-    @Getter
     private final ThreadLocal<String> changeSource = new ThreadLocal<>();
-    @Getter
     private final ThreadLocal<String> changedBy = new ThreadLocal<>();
 
     public void setContext(String source, String user) {

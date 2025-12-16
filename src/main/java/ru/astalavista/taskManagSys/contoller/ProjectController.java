@@ -1,7 +1,9 @@
 package ru.astalavista.taskManagSys.contoller;
 
 import jakarta.validation.Valid;
-import ru.astalavista.taskManagSys.model.dto.ProjectDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectUpdateDTO;
 import ru.astalavista.taskManagSys.service.ProjectService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +17,12 @@ public class ProjectController {
     private final ProjectService service;
 
     @PostMapping
-    public ProjectDTO create(@Valid @RequestBody ProjectDTO dto) {
+    public ProjectDTO create(@Valid @RequestBody ProjectCreateDTO dto) {
         return service.create(dto);
     }
 
     @PutMapping("/{id}")
-    public ProjectDTO update(@PathVariable Long id, @RequestBody ProjectDTO dto) {
+    public ProjectDTO update(@PathVariable Long id, @RequestBody ProjectUpdateDTO dto) {
         return service.update(id, dto).orElse(null);
     }
 

@@ -4,7 +4,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
-import ru.astalavista.taskManagSys.model.dto.ProjectDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectDTO;
+import ru.astalavista.taskManagSys.model.dto.project.ProjectUpdateDTO;
 import ru.astalavista.taskManagSys.model.entity.Project;
 import ru.astalavista.taskManagSys.model.entity.Task;
 
@@ -16,9 +18,9 @@ public interface ProjectMapper {
     @Mapping(target = "taskIds", source = "tasks", qualifiedByName = "mapTaskListToIds")
     ProjectDTO toDTO(Project project);
 
-    Project toEntity(ProjectDTO dto);
+    Project toEntity(ProjectCreateDTO dto);
 
-    void updateEntityFromDTO(ProjectDTO dto, @MappingTarget Project entity);
+    void updateEntityFromDTO(ProjectUpdateDTO dto, @MappingTarget Project entity);
 
     @Named("mapTaskListToIds")
     default List<Long> mapTaskListToIds(List<Task> tasks) {
@@ -26,7 +28,7 @@ public interface ProjectMapper {
             return null;
 
         return tasks.stream()
-                .map(Task::getId)
-                .collect(Collectors.toList());
+            .map(Task::getId)
+            .collect(Collectors.toList());
     }
 }

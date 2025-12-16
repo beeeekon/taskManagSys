@@ -1,26 +1,24 @@
-package ru.astalavista.taskManagSys.model.dto;
+package ru.astalavista.taskManagSys.model.dto.task;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 import ru.astalavista.taskManagSys.model.enums.TaskStatus;
 import ru.astalavista.taskManagSys.model.enums.TaskType;
-import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * DTO для сущности Task
- */
+// DTO для создания новой задачи
 @Data
-public class TaskDTO {
-    // ID
-    private Long id;
-
-    // Публичный идентификатор задачи в формате <код проекта>-<номер>
-    private String publicId;
+public class TaskCreateDTO {
 
     // Тип
+    @NotNull(message = "Task type is required")
     private TaskType type;
 
     // Заголовок
+    @NotBlank(message = "Title is required")
     private String title;
 
     // Подробное описание
@@ -33,9 +31,11 @@ public class TaskDTO {
     private Integer timeSpent;
 
     // Статус
+    @NotNull(message = "Task status is required")
     private TaskStatus status;
 
     // ID проекта, к которому относится задача
+    @NotNull(message = "Project ID is required")
     private Long projectId;
 
     // ID исполнителя (сотрудника), если он назначен
@@ -43,10 +43,4 @@ public class TaskDTO {
 
     // ID связанных задач
     private List<Long> linkedTaskIds;
-
-    // Дата создания
-    private LocalDateTime createdAt;
-
-    // Дата последнего обновления
-    private LocalDateTime updatedAt;
 }

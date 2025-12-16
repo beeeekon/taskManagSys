@@ -19,9 +19,9 @@ public class TaskNumberGeneratorService {
             return "TEMP-001";
         }
 
-        // Используем новый метод: findTopByProjectIdOrderByPublicIdDesc
-        Optional<Task> lastTask = taskRepository
-                .findTopByProjectIdOrderByPublicIdDesc(project.getId());
+        Optional<Task> lastTask = taskRepository.findTopByProjectIdOrderByNumberDesc(
+            project.getId()
+        );
 
         String projectCode = project.getCode().toUpperCase();
         int nextNumber = 1;
@@ -40,32 +40,5 @@ public class TaskNumberGeneratorService {
         }
 
         return String.format("%s-%03d", projectCode, nextNumber);
-    }
-
-    // Альтернативный метод для генерации номера по ID проекта
-    public String generateNumber(Long projectId, String projectCode) {
-        if (projectId == null || projectCode == null) {
-            return "TEMP-001";
-        }
-
-        Optional<Task> lastTask = taskRepository
-                .findTopByProjectIdOrderByPublicIdDesc(projectId);
-
-        String code = projectCode.toUpperCase();
-        int nextNumber = 1;
-
-        if (lastTask.isPresent() && lastTask.get().getPublicId() != null) {
-            String lastPublicId = lastTask.get().getPublicId();
-            try {
-                String[] parts = lastPublicId.split("-");
-                if (parts.length == 2 && parts[0].equals(code)) {
-                    nextNumber = Integer.parseInt(parts[1]) + 1;
-                }
-            } catch (NumberFormatException e) {
-                System.err.println("Error parsing publicId: " + lastPublicId + " - " + e.getMessage());
-            }
-        }
-
-        return String.format("%s-%03d", code, nextNumber);
     }
 }

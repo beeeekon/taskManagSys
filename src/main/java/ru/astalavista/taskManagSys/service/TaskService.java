@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskUpdateDTO;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.entity.Project;
 import ru.astalavista.taskManagSys.model.entity.Task;
@@ -37,7 +39,7 @@ public class TaskService {
     private final ApplicationEventPublisher taskEventPublisher;
 
     @Transactional
-    public TaskDTO create(TaskDTO dto) {
+    public TaskDTO create(TaskCreateDTO dto) {
         log.info("Creating new task: {}", dto.getTitle());
 
         // 1. Валидация и получение зависимостей
@@ -76,7 +78,7 @@ public class TaskService {
     }
 
     @Transactional
-    public Optional<TaskDTO> update(Long id, TaskDTO dto) {
+    public Optional<TaskDTO> update(Long id, TaskUpdateDTO dto) {
         log.info("Updating task with ID: {}", id);
 
         return taskRepository.findById(id)
@@ -307,7 +309,7 @@ public class TaskService {
         task.setLinkedTasks(linkedTasks);
     }
 
-    private void updateDependencies(Task task, TaskDTO dto) {
+    private void updateDependencies(Task task, TaskUpdateDTO dto) {
         // Обновляем проект если изменился
         if (dto.getProjectId() != null &&
                 (task.getProject() == null || !task.getProject().getId().equals(dto.getProjectId()))) {

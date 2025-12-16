@@ -1,8 +1,9 @@
-package ru.astalavista.taskManagSys.model.dto;
+package ru.astalavista.taskManagSys.model.dto.project;
 
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,5 +30,5 @@ public class ProjectDTO {
     private LocalDateTime updatedAt;
 
     // ID задач
-    private List<Long> taskIds;
+    private List<Long> taskIds = new ArrayList<>();
 }

@@ -1,6 +1,6 @@
 package ru.astalavista.taskManagSys.service;
 
-import ru.astalavista.taskManagSys.model.dto.TaskAuditDTO;
+import ru.astalavista.taskManagSys.model.dto.taskaudit.TaskAuditDTO;
 import ru.astalavista.taskManagSys.model.mapper.TaskAuditMapper;
 import ru.astalavista.taskManagSys.repository.TaskAuditRepository;
 import lombok.RequiredArgsConstructor;

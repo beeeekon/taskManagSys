@@ -11,7 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.astalavista.taskManagSys.config.AuditContextProvider;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskDTO;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.enums.TaskStatus;
 import ru.astalavista.taskManagSys.repository.EmployeeRepository;

@@ -1,4 +1,4 @@
-package ru.astalavista.taskManagSys.model.dto;
+package ru.astalavista.taskManagSys.model.dto.taskaudit;
 
 import lombok.Data;
 import java.time.LocalDateTime;

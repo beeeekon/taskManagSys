@@ -3,7 +3,9 @@ package ru.astalavista.taskManagSys.contoller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskUpdateDTO;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.enums.TaskStatus;
 import ru.astalavista.taskManagSys.service.TaskService;
@@ -18,12 +20,12 @@ public class TaskController {
     private final TaskService service;
 
     @PostMapping
-    public TaskDTO create(@Valid @RequestBody TaskDTO dto) {
+    public TaskDTO create(@Valid @RequestBody TaskCreateDTO dto) {
         return service.create(dto);
     }
 
     @PutMapping("/{id}")
-    public TaskDTO update(@PathVariable Long id, @RequestBody TaskDTO dto) {
+    public TaskDTO update(@PathVariable Long id, @RequestBody TaskUpdateDTO dto) {
         return service.update(id, dto).orElse(null);
     }
 
@@ -49,7 +51,7 @@ public class TaskController {
 
     @PostMapping("/api/create")
     public TaskDTO createViaApi(
-        @Valid @RequestBody TaskDTO dto,
+        @Valid @RequestBody TaskCreateDTO dto,
         @RequestHeader("X-Change-Source") String changeSource,
         @RequestHeader("X-API-Key") String apiKey
     ) {
@@ -64,7 +66,7 @@ public class TaskController {
 
     @PostMapping("/telegram/create")
     public TaskDTO createViaTelegram(
-        @Valid @RequestBody TaskDTO dto,
+        @Valid @RequestBody TaskCreateDTO dto,
         @RequestParam Long telegramChatId
     ) {
         // Найти сотрудника по telegramChatId

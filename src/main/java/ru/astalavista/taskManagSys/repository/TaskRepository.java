@@ -34,16 +34,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByDueDateBeforeAndStatusNot(LocalDateTime date, TaskStatus status);
 
-    // Исправленный метод: поиск по projectId, а не по Project entity
-    Optional<Task> findTopByProjectIdOrderByPublicIdDesc(Long projectId);
-
-    // Сохраняем старый метод для совместимости (опционально)
-    default Optional<Task> findTopByProjectOrderByPublicIdDesc(ru.astalavista.taskManagSys.model.entity.Project project) {
-        if (project == null || project.getId() == null) {
-            return Optional.empty();
-        }
-        return findTopByProjectIdOrderByPublicIdDesc(project.getId());
-    }
+    @Query(value = """
+        SELECT * FROM tasks
+        WHERE project_id = :projectId
+        ORDER BY CAST(SPLIT_PART(public_id, '-', 2) AS INT) DESC
+        LIMIT 1
+        """,
+        nativeQuery = true
+    )
+    Optional<Task> findTopByProjectIdOrderByNumberDesc(@Param("projectId") Long projectId);
 
     // Для поиска по публичному ID
     Optional<Task> findByPublicId(String publicId);

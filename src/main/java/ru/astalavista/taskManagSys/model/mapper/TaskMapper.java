@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskDTO;
 import ru.astalavista.taskManagSys.model.entity.Task;
 
 import java.util.List;
@@ -35,7 +35,9 @@ public interface TaskMapper {
 package ru.astalavista.taskManagSys.model.mapper;
 
 import org.mapstruct.*;
-import ru.astalavista.taskManagSys.model.dto.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskDTO;
+import ru.astalavista.taskManagSys.model.dto.task.TaskUpdateDTO;
 import ru.astalavista.taskManagSys.model.entity.Project;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.entity.Task;
@@ -56,12 +58,12 @@ public interface TaskMapper {
     @Mapping(target = "assignee", source = "assigneeId", qualifiedByName = "mapEmployeeIdToEntity")
     @Mapping(target = "linkedTasks", ignore = true) // Обрабатывается отдельно в сервисе
     @Mapping(target = "status", defaultValue = "REGISTERED")
-    Task toEntity(TaskDTO dto);
+    Task toEntity(TaskCreateDTO dto);
 
     @Mapping(target = "project", source = "projectId", qualifiedByName = "mapProjectIdToEntity")
     @Mapping(target = "assignee", source = "assigneeId", qualifiedByName = "mapEmployeeIdToEntity")
     @Mapping(target = "linkedTasks", ignore = true)
-    void updateEntityFromDTO(TaskDTO dto, @MappingTarget Task entity);
+    void updateEntityFromDTO(TaskUpdateDTO dto, @MappingTarget Task entity);
 
     @Named("mapTaskListToIds")
     default List<Long> mapTaskListToIds(List<Task> tasks) {

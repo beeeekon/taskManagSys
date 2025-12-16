@@ -6,6 +6,7 @@ values
     ('Алина', 'alina@company.ru', 'Frontend Developer', '1751029282', now()),
     ('Лилия', 'liliya@company.ru', 'QA Engineer', '706193881', now());
 
+
 -- PROJECTS
 insert into projects (code, name, description, created_at)
 values
@@ -17,50 +18,52 @@ values
 insert into tasks (title, description, status, type, public_id, due_date, assignee_id, project_id, created_at)
 values
 -- Вероника
-    ('Реализовать REST API', 'Создать CRUD для задач', 'IN_PROGRESS', 'TASK', 'TM-1',
+    ('Реализовать REST API', 'Создать CRUD для задач', 'IN_PROGRESS', 'TASK', 'ТМ-001',
      now() + interval '5 days',
      (select id from employees where full_name = 'Вероника'),
      (select id from projects where code = 'TM'),
      now()),
 
 -- Екатерина
-    ('Покрыть тестами сервис задач', 'JUnit + Mockito', 'REGISTERED', 'TASK', 'TM-2',
+    ('Покрыть тестами сервис задач', 'JUnit + Mockito', 'REGISTERED', 'TASK', 'ТМ-002',
      now() + interval '3 days',
      (select id from employees where full_name = 'Екатерина'),
      (select id from projects where code = 'TM'),
      now()),
 
 -- Алина
-    ('Исправить баг верстки', 'Проблема с кнопкой сохранения', 'BUG_FIXING', 'BUG', 'TM-3',
+    ('Исправить баг верстки', 'Проблема с кнопкой сохранения', 'BUG_FIXING', 'BUG', 'ТМ-003',
      now() - interval '2 days',
      (select id from employees where full_name = 'Алина'),
      (select id from projects where code = 'TM'),
      now()),
 
 -- Лилия
-('Сформировать требования', 'Описание бизнес-логики', 'UNDER_REVIEW', 'REQUIREMENT', 'TM-4',
+('Сформировать требования', 'Описание бизнес-логики', 'UNDER_REVIEW', 'REQUIREMENT', 'ТМ-004',
      now() + interval '7 days',
      (select id from employees where full_name = 'Лилия'),
      (select id from projects where code = 'MOB'),
      now());
 
+
 -- TASK LINKS
 insert into task_links (task_id, linked_task_id)
 values
     (
-        (select id from tasks where public_id = 'TM-1'),
-        (select id from tasks where public_id = 'TM-2')
+        (select id from tasks where public_id = 'ТМ-001'),
+        (select id from tasks where public_id = 'ТМ-002')
     );
+
 
 -- TASK AUDIT LOG
 insert into task_audit_log (task_id, field_name, old_value, new_value, changed_by, change_source, changed_at)
 values
     (
-        (select id from tasks where public_id = 'TM-1'),
+        (select id from tasks where public_id = 'ТМ-001'),
         'status',
         'REGISTERED',
         'IN_PROGRESS',
-        'system',
+        'anonymousUser',
         'SYSTEM',
         now()
     );

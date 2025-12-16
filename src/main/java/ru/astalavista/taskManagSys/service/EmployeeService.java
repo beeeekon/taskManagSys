@@ -1,6 +1,8 @@
 package ru.astalavista.taskManagSys.service;
 
-import ru.astalavista.taskManagSys.model.dto.EmployeeDTO;
+import ru.astalavista.taskManagSys.model.dto.employee.EmployeeCreateDTO;
+import ru.astalavista.taskManagSys.model.dto.employee.EmployeeDTO;
+import ru.astalavista.taskManagSys.model.dto.employee.EmployeeUpdateDTO;
 import ru.astalavista.taskManagSys.model.entity.Employee;
 import ru.astalavista.taskManagSys.model.mapper.EmployeeMapper;
 import ru.astalavista.taskManagSys.repository.EmployeeRepository;
@@ -18,7 +20,6 @@ public class EmployeeService {
     private final EmployeeRepository repository;
     private final EmployeeMapper mapper;
 
-
     public List<EmployeeDTO> getAll() {
         return repository.findAll().stream()
             .map(mapper::toDTO)
@@ -29,13 +30,13 @@ public class EmployeeService {
         return repository.findById(id).map(mapper::toDTO);
     }
 
-    public EmployeeDTO create(EmployeeDTO dto) {
+    public EmployeeDTO create(EmployeeCreateDTO dto) {
         Employee employee = mapper.toEntity(dto);
         Employee saved = repository.save(employee);
         return mapper.toDTO(saved);
     }
 
-    public Optional<EmployeeDTO> update(Long id, EmployeeDTO dto) {
+    public Optional<EmployeeDTO> update(Long id, EmployeeUpdateDTO dto) {
         return repository.findById(id)
             .map(existing -> {
                 mapper.updateEntityFromDTO(dto, existing);
