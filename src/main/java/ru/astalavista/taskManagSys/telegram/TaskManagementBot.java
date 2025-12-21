@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import ru.astalavista.taskManagSys.telegram.TelegramBotConfig;
-import ru.astalavista.taskManagSys.telegram.TelegramBotService;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import jakarta.annotation.PostConstruct;
 
@@ -36,6 +36,14 @@ public class TaskManagementBot extends TelegramLongPollingBot {
 
         log.info("Telegram Bot initialized: {}", config.getBotUsername());
         log.info("Bot token: {}", config.getMaskedToken());
+
+        try {
+            TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+            botsApi.registerBot(this);
+            log.info("Bot registered with TelegramBotsApi successfully");
+        } catch (TelegramApiException e) {
+            log.error("Failed to register bot with Telegram API", e);
+        }
 
         // Отправляем сообщение администратору при старте
         sendStartupNotification();

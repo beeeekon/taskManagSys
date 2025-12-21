@@ -160,6 +160,7 @@ public class TaskService {
         return taskMapper.toDTO(task);
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findFilteredTasks(Long assigneeId, Long projectId,
                                            TaskStatus status, boolean onlyOpen,
                                            boolean onlyOverdue) {
@@ -234,41 +235,48 @@ public class TaskService {
         return taskMapper.toDTO(mainTask);
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findAll() {
         return taskRepository.findAll().stream()
             .map(taskMapper::toDTO)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public Optional<TaskDTO> findById(Long id) {
         return taskRepository.findById(id)
             .map(taskMapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findTasksByAssignee(Long assigneeId) {
         return taskRepository.findByAssigneeId(assigneeId).stream()
             .map(taskMapper::toDTO)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findTasksByProject(Long projectId) {
         return taskRepository.findByProjectId(projectId).stream()
             .map(taskMapper::toDTO)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findTasksByStatus(TaskStatus status) {
         return taskRepository.findByStatus(status).stream()
             .map(taskMapper::toDTO)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findOverdueTasks() {
         return taskRepository.findOverdueTasks().stream()
             .map(taskMapper::toDTO)
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<TaskDTO> findOpenTasks() {
         return taskRepository.findOpenTasks().stream()
             .map(taskMapper::toDTO)
@@ -342,6 +350,7 @@ public class TaskService {
     /**
      * Находит задачу по публичному ID
      */
+    @Transactional(readOnly = true)
     public Optional<TaskDTO> findByPublicId(String publicId) {
         return taskRepository.findAll().stream()
                 .filter(task -> publicId != null && publicId.equals(task.getPublicId()))
@@ -352,6 +361,7 @@ public class TaskService {
     /**
      * Получает задачи с истекшим сроком для конкретного сотрудника
      */
+    @Transactional(readOnly = true)
     public List<TaskDTO> findOverdueTasksByAssignee(Long assigneeId) {
         List<TaskDTO> allTasks = findTasksByAssignee(assigneeId);
         return allTasks.stream()
@@ -363,6 +373,7 @@ public class TaskService {
     /**
      * Получает статистику по задачам сотрудника
      */
+    @Transactional(readOnly = true)
     public TaskStatistics getTaskStatistics(Long employeeId) {
         List<TaskDTO> employeeTasks = findTasksByAssignee(employeeId);
 
