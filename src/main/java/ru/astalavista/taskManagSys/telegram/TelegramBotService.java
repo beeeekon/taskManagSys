@@ -101,6 +101,15 @@ public class TelegramBotService {
     /**
      * Обрабатывает нажатия на inline-кнопки
      */
+    private void updateEmployeeTelegramChatId(Employee employee, Long chatId) {
+        String chatIdStr = String.valueOf(chatId);
+        if (!chatIdStr.equals(employee.getTelegramChatId())) {
+            employee.setTelegramChatId(chatIdStr);
+            employeeRepository.save(employee);
+            log.info("Updated telegram chatId for employee {}: {}", employee.getEmail(), chatId);
+        }
+    }
+
     private SendMessage handleCallbackQuery(Long chatId, String callbackData, String telegramUsername) {
         log.info("Callback from {}: {}", telegramUsername, callbackData);
 
@@ -116,87 +125,17 @@ public class TelegramBotService {
         } else if (parts.length >= 3 && "task".equals(parts[0]) && "details".equals(parts[2])) {
             return showTaskDetails(chatId, parts[1], telegramUsername);
         } else if (parts.length >= 2 && "register".equals(parts[0])) {
-            return handleRegistration(chatId, parts[1], telegramUsername);
+            return handleRegistration(chatId, parts[1]);
         }
 
         return createMessage(chatId, "❌ Неизвестная команда");
     }
 
-    /**
-     * Изменяет статус задачи
-     */
-    private SendMessage handleTaskStatusChange(Long chatId, String[] parts, String telegramUsername) {
-        try {
-            Long taskId = Long.parseLong(parts[1]);
-            TaskStatus newStatus = TaskStatus.valueOf(parts[3]);
-
-            // Находим сотрудника
-            Optional<Employee> employeeOpt = findEmployeeByTelegramUsername(telegramUsername);
-            if (employeeOpt.isEmpty()) {
-                return createMessage(chatId, "❌ Вы не зарегистрированы в системе");
-            }
-
-            Employee employee = employeeOpt.get();
-
-            // Проверяем, что сотрудник является исполнителем задачи
-            TaskDTO task = taskService.findById(taskId)
-                    .orElseThrow(() -> new RuntimeException("Задача не найдена"));
-
-            if (task.getAssigneeId() == null || !task.getAssigneeId().equals(employee.getId())) {
-                return createMessage(chatId,
-                        "❌ У вас нет прав для изменения этой задачи. " +
-                                "Эта задача назначена другому сотруднику.");
-            }
-
-            // Устанавливаем контекст аудита для Telegram
-            auditContextProvider.setContext("TELEGRAM_BOT", employee.getEmail());
-
-            try {
-                // Изменяем статус задачи
-                TaskDTO updatedTask = taskService.changeStatus(taskId, newStatus);
-
-                return createMessage(chatId,
-                        "✅ Статус задачи *#" + updatedTask.getPublicId() + "* изменен на: " +
-                                translateStatus(newStatus) + "\n\n" +
-                                "Задача: *" + updatedTask.getTitle() + "*"
-                );
-            } finally {
-                auditContextProvider.clearContext();
-            }
-
-        } catch (NumberFormatException e) {
-            log.error("Invalid task ID in callback", e);
-            return createMessage(chatId, "❌ Неверный ID задачи");
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid task status in callback", e);
-            return createMessage(chatId, "❌ Неверный статус задачи");
-        } catch (Exception e) {
-            log.error("Error changing task status", e);
-            return createMessage(chatId, "❌ Ошибка при изменении статуса: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Показывает детали задачи
-     */
-    private SendMessage showTaskDetails(Long chatId, String taskIdStr, String telegramUsername) {
-        try {
-            Long taskId = Long.parseLong(taskIdStr);
-            TaskDTO task = taskService.findById(taskId)
-                    .orElseThrow(() -> new RuntimeException("Задача не найдена"));
-
-            return createMessage(chatId, formatTaskDetails(task));
-
-        } catch (Exception e) {
-            log.error("Error showing task details", e);
-            return createMessage(chatId, "❌ Ошибка при получении данных задачи");
-        }
-    }
 
     /**
      * Обрабатывает регистрацию сотрудника
      */
-    private SendMessage handleRegistration(Long chatId, String employeeIdStr, String telegramUsername) {
+    private SendMessage handleRegistration(Long chatId, String employeeIdStr) {
         try {
             Long employeeId = Long.parseLong(employeeIdStr);
             Optional<Employee> employeeOpt = employeeRepository.findById(employeeId);
@@ -224,9 +163,135 @@ public class TelegramBotService {
         }
     }
 
+    private Optional<Employee> findEmployeeByTelegramData(Long chatId, String telegramUsername) {
+        if (chatId != null) {
+            Optional<Employee> byChatId = employeeRepository.findAll().stream()
+                    .filter(e -> String.valueOf(chatId).equals(e.getTelegramChatId()))
+                    .findFirst();
+
+            if (byChatId.isPresent()) return byChatId;
+        }
+
+        if (telegramUsername != null) {
+            return findEmployeeByTelegramUsername(telegramUsername);
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Employee> findEmployeeByTelegramUsername(String telegramUsername) {
+        if (telegramUsername == null) return Optional.empty();
+        String cleanUsername = telegramUsername.replace("@", "");
+
+        return employeeRepository.findAll().stream()
+                .filter(e -> cleanUsername.equals(e.getTelegramChatId()))
+                .findFirst();
+    }
+
+    private Optional<Employee> findEmployeeByTelegramChatId(Long chatId) {
+        if (chatId == null) return Optional.empty();
+        return employeeRepository.findAll().stream()
+                .filter(e -> chatId.equals(Long.valueOf(e.getTelegramChatId())))
+                .findFirst();
+    }
+
+    private SendMessage createRegistrationMessage(Long chatId, String telegramUsername) {
+        List<Employee> potentialEmployees = employeeRepository.findAll();
+
+        if (potentialEmployees.isEmpty()) {
+            return createMessage(chatId,
+                    "🔐 *Требуется регистрация*\n\n" +
+                            "Обратитесь к администратору для получения доступа.\n" +
+                            "*Ваш Telegram ID:* " + chatId
+            );
+        }
+
+        if (potentialEmployees.size() == 1) {
+            return confirmRegistration(chatId, potentialEmployees.get(0));
+        }
+
+        return createEmployeeSelectionMessage(chatId, potentialEmployees);
+    }
+
     /**
-     * Показывает главное меню
+     * Подтверждает регистрацию
      */
+    private SendMessage confirmRegistration(Long chatId, Employee employee) {
+        String message = String.format(
+                "🔐 *Подтверждение регистрации*\n\n" +
+                        "Найден сотрудник:\n" +
+                        "• *Имя:* %s\n" +
+                        "• *Email:* %s\n" +
+                        "• *Должность:* %s\n\n" +
+                        "Это вы?",
+                employee.getFullName(),
+                employee.getEmail(),
+                employee.getPosition() != null ? employee.getPosition() : "Не указана"
+        );
+
+        SendMessage sendMessage = createMessage(chatId, message);
+
+        // Создаем inline-кнопку для подтверждения
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        InlineKeyboardButton confirmButton = new InlineKeyboardButton();
+        confirmButton.setText("✅ Да, это я");
+        confirmButton.setCallbackData("register_" + employee.getId());
+        row.add(confirmButton);
+        rows.add(row);
+
+        keyboard.setKeyboard(rows);
+        sendMessage.setReplyMarkup(keyboard);
+
+        return sendMessage;
+    }
+
+    /**
+     * Создает сообщение для выбора сотрудника
+     */
+    private SendMessage createEmployeeSelectionMessage(Long chatId, List<Employee> employees) {
+        StringBuilder message = new StringBuilder("🔍 *Найдено несколько сотрудников*\n\n");
+        message.append("Выберите ваш профиль:\n\n");
+
+        for (int i = 0; i < employees.size(); i++) {
+            Employee emp = employees.get(i);
+            message.append(i + 1).append(". *").append(emp.getFullName()).append("*\n");
+            message.append("   Email: ").append(emp.getEmail()).append("\n");
+            message.append("   Должность: ").append(emp.getPosition() != null ? emp.getPosition() : "Не указана").append("\n\n");
+        }
+
+        SendMessage sendMessage = createMessage(chatId, message.toString());
+
+        // Создаем inline-кнопки для выбора
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        for (int i = 0; i < employees.size(); i++) {
+            List<InlineKeyboardButton> row = new ArrayList<>();
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText((i + 1) + ". " + employees.get(i).getFullName());
+            button.setCallbackData("register_" + employees.get(i).getId());
+            row.add(button);
+            rows.add(row);
+        }
+
+        keyboard.setKeyboard(rows);
+        sendMessage.setReplyMarkup(keyboard);
+
+        return sendMessage;
+    }
+
+    private SendMessage createMessage(Long chatId, String text) {
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text);
+        message.setParseMode("Markdown");
+        message.setDisableWebPagePreview(true);
+        return message;
+    }
+
     private SendMessage showMainMenu(Long chatId, Employee employee) {
         String message = String.format(
                 "👋 *Добро пожаловать, %s!*\n\n" +
@@ -367,118 +432,6 @@ public class TelegramBotService {
         return createMessage(chatId, helpText);
     }
 
-    /**
-     * Создает сообщение для регистрации
-     */
-    private SendMessage createRegistrationMessage(Long chatId, String telegramUsername) {
-        // Ищем сотрудника по username (без @)
-        String cleanUsername = telegramUsername != null ?
-                telegramUsername.replace("@", "") : telegramUsername;
-
-        List<Employee> potentialEmployees = employeeRepository.findAll().stream()
-                .filter(e -> {
-                    if (e.getTelegramChatId() == null) return false;
-                    String employeeChatId = e.getTelegramChatId().replace("@", "");
-                    return cleanUsername != null && cleanUsername.equals(employeeChatId);
-                })
-                .toList();
-
-        if (potentialEmployees.isEmpty()) {
-            return createMessage(chatId,
-                    "🔐 *Требуется регистрация*\n\n" +
-                            "Вы не зарегистрированы в системе управления задачами.\n\n" +
-                            "Обратитесь к администратору для получения доступа:\n" +
-                            "1. Предоставьте ваш Telegram username: " +
-                            (telegramUsername != null ? "@" + telegramUsername : "не указан") + "\n" +
-                            "2. Администратор добавит вас в систему\n" +
-                            "3. После этого используйте команду /start\n\n" +
-                            "*Ваш Telegram ID:* " + chatId
-            );
-        }
-
-        // Если найден один сотрудник, предлагаем подтвердить регистрацию
-        if (potentialEmployees.size() == 1) {
-            Employee employee = potentialEmployees.get(0);
-            return confirmRegistration(chatId, employee);
-        }
-
-        // Если найдено несколько сотрудников, предлагаем выбрать
-        return createEmployeeSelectionMessage(chatId, potentialEmployees, telegramUsername);
-    }
-
-    /**
-     * Подтверждает регистрацию
-     */
-    private SendMessage confirmRegistration(Long chatId, Employee employee) {
-        String message = String.format(
-                "🔐 *Подтверждение регистрации*\n\n" +
-                        "Найден сотрудник:\n" +
-                        "• *Имя:* %s\n" +
-                        "• *Email:* %s\n" +
-                        "• *Должность:* %s\n\n" +
-                        "Это вы?",
-                employee.getFullName(),
-                employee.getEmail(),
-                employee.getPosition() != null ? employee.getPosition() : "Не указана"
-        );
-
-        SendMessage sendMessage = createMessage(chatId, message);
-
-        // Создаем inline-кнопку для подтверждения
-        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-        List<InlineKeyboardButton> row = new ArrayList<>();
-        InlineKeyboardButton confirmButton = new InlineKeyboardButton();
-        confirmButton.setText("✅ Да, это я");
-        confirmButton.setCallbackData("register_" + employee.getId());
-        row.add(confirmButton);
-        rows.add(row);
-
-        keyboard.setKeyboard(rows);
-        sendMessage.setReplyMarkup(keyboard);
-
-        return sendMessage;
-    }
-
-    /**
-     * Создает сообщение для выбора сотрудника
-     */
-    private SendMessage createEmployeeSelectionMessage(Long chatId, List<Employee> employees, String telegramUsername) {
-        StringBuilder message = new StringBuilder("🔍 *Найдено несколько сотрудников*\n\n");
-        message.append("Выберите ваш профиль:\n\n");
-
-        for (int i = 0; i < employees.size(); i++) {
-            Employee emp = employees.get(i);
-            message.append(i + 1).append(". *").append(emp.getFullName()).append("*\n");
-            message.append("   Email: ").append(emp.getEmail()).append("\n");
-            message.append("   Должность: ").append(emp.getPosition() != null ? emp.getPosition() : "Не указана").append("\n\n");
-        }
-
-        SendMessage sendMessage = createMessage(chatId, message.toString());
-
-        // Создаем inline-кнопки для выбора
-        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-
-        for (int i = 0; i < employees.size(); i++) {
-            List<InlineKeyboardButton> row = new ArrayList<>();
-            InlineKeyboardButton button = new InlineKeyboardButton();
-            button.setText((i + 1) + ". " + employees.get(i).getFullName());
-            button.setCallbackData("register_" + employees.get(i).getId());
-            row.add(button);
-            rows.add(row);
-        }
-
-        keyboard.setKeyboard(rows);
-        sendMessage.setReplyMarkup(keyboard);
-
-        return sendMessage;
-    }
-
-    /**
-     * Форматирует краткое описание задачи
-     */
     private String formatTaskShort(TaskDTO task) {
         return String.format(
                 "🔹 *#%s* - %s\n" +
@@ -494,41 +447,6 @@ public class TelegramBotService {
         );
     }
 
-    /**
-     * Форматирует детальное описание задачи
-     */
-    private String formatTaskDetails(TaskDTO task) {
-        return String.format(
-                "📋 *Детали задачи #%s*\n\n" +
-                        "*Заголовок:* %s\n" +
-                        "*Статус:* %s\n" +
-                        "*Описание:* %s\n\n" +
-                        "*Срок выполнения:* %s\n" +
-                        "*Затраченное время:* %s часов\n" +
-                        "*Проект:* #%s\n" +
-                        "*Создана:* %s\n" +
-                        "*Обновлена:* %s\n\n" +
-                        "*ID задачи:* %s",
-                task.getPublicId(),
-                task.getTitle(),
-                translateStatus(task.getStatus()),
-                task.getDescription() != null && !task.getDescription().isEmpty() ?
-                        task.getDescription() : "Нет описания",
-                task.getDueDate() != null ?
-                        task.getDueDate().format(DATE_FORMATTER) : "Не установлен",
-                task.getTimeSpent() != null ? task.getTimeSpent() : 0,
-                task.getProjectId(),
-                task.getCreatedAt() != null ?
-                        task.getCreatedAt().format(DATE_FORMATTER) : "Неизвестно",
-                task.getUpdatedAt() != null ?
-                        task.getUpdatedAt().format(DATE_FORMATTER) : "Неизвестно",
-                task.getId()
-        );
-    }
-
-    /**
-     * Создает клавиатуру для управления задачей
-     */
     private InlineKeyboardMarkup createTaskActionsKeyboard(TaskDTO task) {
         InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -601,127 +519,50 @@ public class TelegramBotService {
         }
     }
 
-    /**
-     * Находит сотрудника по данным Telegram
-     */
-    private Optional<Employee> findEmployeeByTelegramData(Long chatId, String telegramUsername) {
-        // Сначала ищем по chatId (преобразуем в строку для сравнения)
-        if (chatId != null) {
-            String chatIdStr = String.valueOf(chatId);
-            Optional<Employee> byChatId = employeeRepository.findAll().stream()
-                    .filter(e -> chatIdStr.equals(e.getTelegramChatId()))
-                    .findFirst();
-
-            if (byChatId.isPresent()) {
-                return byChatId;
-            }
-        }
-
-        // Если не нашли по chatId, ищем по username
-        if (telegramUsername != null) {
-            return findEmployeeByTelegramUsername(telegramUsername);
-        }
-
-        return Optional.empty();
-    }
-
-    /**
-     * Находит сотрудника по Telegram username
-     */
-    private Optional<Employee> findEmployeeByTelegramUsername(String telegramUsername) {
-        if (telegramUsername == null) {
-            return Optional.empty();
-        }
-
-        String cleanUsername = telegramUsername.replace("@", "");
-
-        return employeeRepository.findAll().stream()
-                .filter(e -> {
-                    if (e.getTelegramChatId() == null) return false;
-                    String employeeChatId = e.getTelegramChatId().replace("@", "");
-                    return cleanUsername.equals(employeeChatId);
-                })
-                .findFirst();
-    }
-
-    /**
-     * Обновляет chatId сотрудника
-     */
-    private void updateEmployeeTelegramChatId(Employee employee, Long chatId) {
-        String chatIdStr = String.valueOf(chatId);
-        if (!chatIdStr.equals(employee.getTelegramChatId())) {
-            employee.setTelegramChatId(chatIdStr);
-            employeeRepository.save(employee);
-            log.info("Updated telegram chatId for employee {}: {}", employee.getEmail(), chatId);
-        }
-    }
-
-    /**
-     * Создает базовое сообщение
-     */
-    private SendMessage createMessage(Long chatId, String text) {
-        SendMessage message = new SendMessage();
-        message.setChatId(String.valueOf(chatId));
-        message.setText(text);
-        message.setParseMode("Markdown");
-        message.setDisableWebPagePreview(true);
-        return message;
-    }
-
-    /**
-     * Отправляет уведомление о новой задаче
-     */
-    public void sendNewTaskNotification(TaskDTO task, Employee assignee) {
-        if (assignee.getTelegramChatId() == null || assignee.getTelegramChatId().isEmpty()) {
-            log.warn("Employee {} has no telegram chatId", assignee.getEmail());
-            return;
-        }
-
+    private SendMessage showTaskDetails(Long chatId, String taskIdStr, String telegramUsername) {
         try {
-            String message = String.format(
-                    "🎯 *НОВАЯ ЗАДАЧА!*\n\n" +
-                            "*Задача:* %s\n" +
-                            "*Проект:* #%s\n" +
-                            "*Срок:* %s\n" +
-                            "*Статус:* %s\n\n" +
-                            "Используйте команду /tasks для просмотра",
-                    task.getTitle(),
-                    task.getProjectId(),
-                    task.getDueDate() != null ?
-                            task.getDueDate().format(DATE_FORMATTER) : "Не установлен",
-                    translateStatus(task.getStatus())
+            Long taskId = Long.parseLong(taskIdStr);
+            TaskDTO task = taskService.findById(taskId).orElseThrow();
+            return createMessage(chatId,
+                    "📋 *Детали задачи #" + task.getPublicId() + "*\n" +
+                            "*Заголовок:* " + task.getTitle() + "\n" +
+                            "*Статус:* " + translateStatus(task.getStatus())
             );
-
-            log.info("Prepared new task notification for employee {}", assignee.getEmail());
-
         } catch (Exception e) {
-            log.error("Error preparing new task notification", e);
+            log.error("Error showing task details", e);
+            return createMessage(chatId, "❌ Ошибка при получении данных задачи");
         }
     }
 
-    /**
-     * Отправляет уведомление о завершении задачи
-     */
-    public void sendTaskCompletedNotification(TaskDTO task, Employee assignee) {
-        if (assignee.getTelegramChatId() == null || assignee.getTelegramChatId().isEmpty()) {
-            return;
-        }
-
+    private SendMessage handleTaskStatusChange(Long chatId, String[] parts, String telegramUsername) {
         try {
-            String message = String.format(
-                    "🎉 *ЗАДАЧА ВЫПОЛНЕНА!*\n\n" +
-                            "*Задача:* %s (#%s)\n" +
-                            "*Время выполнения:* %s часов\n\n" +
-                            "Отличная работа! 👏",
-                    task.getTitle(),
-                    task.getPublicId(),
-                    task.getTimeSpent() != null ? task.getTimeSpent() : 0
-            );
+            Long taskId = Long.parseLong(parts[1]);
+            TaskStatus newStatus = TaskStatus.valueOf(parts[3]);
 
-            log.info("Prepared task completed notification for employee {}", assignee.getEmail());
+            log.info("handleTaskStatusChange: telegramUsername={}, chatId={}", telegramUsername, chatId);
+            Optional<Employee> employeeOpt = findEmployeeByTelegramChatId(chatId);
+            log.info("Found employee: {}", employeeOpt.isPresent());
+
+            if (employeeOpt.isEmpty()) return createMessage(chatId, "❌ Вы не зарегистрированы");
+
+            Employee employee = employeeOpt.get();
+            TaskDTO task = taskService.findById(taskId).orElseThrow();
+
+            if (task.getAssigneeId() == null || !task.getAssigneeId().equals(employee.getId()))
+                return createMessage(chatId, "❌ У вас нет прав для этой задачи");
+
+            auditContextProvider.setContext("TELEGRAM_BOT", employee.getEmail());
+            try {
+                taskService.changeStatus(taskId, newStatus);
+            } finally {
+                auditContextProvider.clearContext();
+            }
+
+            return createMessage(chatId, "✅ Статус задачи #" + task.getPublicId() + " изменен на " + translateStatus(newStatus));
 
         } catch (Exception e) {
             log.error("Error preparing task completed notification", e);
+            return createMessage(chatId, "❌ Ошибка при изменении статуса задачи");
         }
     }
 }
